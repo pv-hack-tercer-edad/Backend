@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from schemas.chapter import Chapter
+from src.schemas.chapter import Chapter
 from src.schemas.transcription import Transcription
 from src.config.db import get_session
 from src.comands.scenes.index import generate_scenes
