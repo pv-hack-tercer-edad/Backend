@@ -5,10 +5,11 @@ from sqlmodel import Field, SQLModel
 
 
 class ObservationBase(SQLModel):
-    text: str
-    img_link: str | None = None
-    img_description: str | None = None
-    date: DateTime
+    title: str
+    description: str
+    img_link: str
+    created_at: DateTime
+    tag: str
 
 
 class Observation(ObservationBase, table=True):
@@ -24,4 +25,4 @@ class ObservationCreate(ObservationBase):
 
 class ObservationRead(ObservationBase):
     id: int
-    date: DateTime
+    created_at: DateTime
