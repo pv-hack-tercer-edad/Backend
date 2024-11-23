@@ -1,16 +1,15 @@
 import logging
-import requests
-from fastapi import HTTPException
 import boto3
-import os
 import json
 import base64
+
+from src.config.settings import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 s3_client = boto3.client("s3")
 bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
-BUCKET_NAME = os.getenv("S3_BUCKET_NAME")
+BUCKET_NAME = settings.aws_s3_bucket
 
 
 def save_image_to_s3(image_buffer: str, image_name: str) -> str:

@@ -14,7 +14,7 @@ from tempfile import NamedTemporaryFile
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/videos")
+router = APIRouter(prefix="/videos", tags=["videos"])
 
 
 class VideoPayloadItem(BaseModel):
@@ -32,7 +32,9 @@ async def download_file_async(url: str, suffix: str) -> str:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
-                raise HTTPException(status_code=response.status, detail=f"Failed to download {url}")
+                raise HTTPException(
+                    status_code=response.status, detail=f"Failed to download {url}"
+                )
             temp_file = NamedTemporaryFile(delete=False, suffix=suffix)
             async with aiofiles.open(temp_file.name, "wb") as f:
                 await f.write(await response.read())
@@ -42,7 +44,9 @@ async def download_file_async(url: str, suffix: str) -> str:
 async def process_video_pair(image_path: str, sound_path: str) -> ImageClip:
     """Process a single image-audio pair to generate a video clip."""
     # Offload CPU-bound processing to a thread
-    return await asyncio.to_thread(create_video_from_image_and_audio, image_path, sound_path)
+    return await asyncio.to_thread(
+        create_video_from_image_and_audio, image_path, sound_path
+    )
 
 
 def create_video_from_image_and_audio(image_path: str, audio_path: str) -> ImageClip:
