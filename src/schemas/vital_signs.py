@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, List
+from datetime import datetime
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -26,3 +27,8 @@ class VitalSignCreate(VitalSignBase):
 
 class VitalSignRead(VitalSignBase):
     pass
+
+
+class VitalSignReadLatest(VitalSignBase):
+    date: Optional[datetime]
+    value: Optional[float]
