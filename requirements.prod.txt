@@ -12,3 +12,4 @@ requests
 aiohttp
 aiofiles
 openai
+pydantic-extra-types
