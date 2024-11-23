@@ -1,3 +1,8 @@
 # Production dependencies
 fastapi[standard]
 uvicorn
+pydantic-settings
+sqlmodel
+pydantic-extra-types
+psycopg2
+pendulum

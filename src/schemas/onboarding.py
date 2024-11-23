@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from sqlmodel import SQLModel
 
-class Onboarding(BaseModel):
+
+class Onboarding(SQLModel):
     pacient_id: int
     doctor_id: int
     preexisting_conditions: str

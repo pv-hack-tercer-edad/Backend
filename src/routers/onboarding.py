@@ -1,7 +1,6 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
 from fastapi.encoders import jsonable_encoder
-from schemas.patient import Patient
+from src.schemas.patient import Patient
 
 router = APIRouter(
     prefix="/onboarding",

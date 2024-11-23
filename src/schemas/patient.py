@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
+
 class Patient(BaseModel):
-    name: str 
+    name: str
     rut: str
     age: int
     height: int
