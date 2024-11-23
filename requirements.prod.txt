@@ -7,3 +7,6 @@ pydantic-extra-types
 psycopg2
 pendulum
 clerk-backend-api
+boto3
+openai
+requests
