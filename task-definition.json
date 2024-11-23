@@ -1,0 +1,44 @@
+{
+    "family": "platanus-hack-task",
+    "containerDefinitions": [
+        {
+            "name": "platanus-hack-service",
+            "image": "145001347266.dkr.ecr.us-east-2.amazonaws.com/platanus-hack:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "platanus-hack-service-80-tcp",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/platanus-hack",
+                    "awslogs-region": "us-east-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "systemControls": []
+        }
+    ],
+    "taskRoleArn": "arn:aws:iam::145001347266:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::145001347266:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "2048",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    }
+}
