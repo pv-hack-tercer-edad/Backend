@@ -1,11 +1,15 @@
+import aiohttp
+import aiofiles
 from io import BytesIO
 from uuid import uuid4
-
-import requests
-from fastapi import APIRouter, File, Form, UploadFile, HTTPException
+import asyncio
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
+from pydantic import BaseModel, HttpUrl
+from typing import List
 import logging
+import os
 from tempfile import NamedTemporaryFile
 
 logger = logging.getLogger(__name__)
@@ -13,70 +17,100 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/videos")
 
 
-def download_image(url: str) -> str:
-    """Download an image from a URL and return the local file path."""
-    response = requests.get(url)
-    response.raise_for_status()
-    temp_file = NamedTemporaryFile(delete=False, suffix=".jpg")
-    with open(temp_file.name, "wb") as f:
-        f.write(response.content)
-    return temp_file.name
+class VideoPayloadItem(BaseModel):
+    url_image: str
+    url_sound: str
 
 
-def create_video_with_audio(images: list[str], audio_path: str, output_path: str):
-    """Create an MP4 video with transitions between images and background audio."""
-    # Load audio to calculate the duration for each image
-    audio = AudioFileClip(audio_path)
-    total_audio_duration = audio.duration
-    logger.info(f"Audio duration: {total_audio_duration}")
+class VideoPayload(BaseModel):
+    items: List[VideoPayloadItem]
 
-    # Calculate duration per image
-    if len(images) == 0:
-        raise HTTPException("No images provided")
 
-    duration_per_image = total_audio_duration / len(images)
-    logger.info(f"Duration per image: {duration_per_image} seconds")
+async def download_file_async(url: str, suffix: str) -> str:
+    """Asynchronously download a file from a URL and save it locally."""
+    logger.info(f"Downloading {url}")
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200:
+                raise HTTPException(status_code=response.status, detail=f"Failed to download {url}")
+            temp_file = NamedTemporaryFile(delete=False, suffix=suffix)
+            async with aiofiles.open(temp_file.name, "wb") as f:
+                await f.write(await response.read())
+            return temp_file.name
 
-    # Load images and set duration
-    clips = [ImageClip(img).set_duration(duration_per_image) for img in images]
 
-    # Add crossfade transition between clips
-    video = concatenate_videoclips(clips, method="compose")
+async def process_video_pair(image_path: str, sound_path: str) -> ImageClip:
+    """Process a single image-audio pair to generate a video clip."""
+    # Offload CPU-bound processing to a thread
+    return await asyncio.to_thread(create_video_from_image_and_audio, image_path, sound_path)
 
-    # Set audio and synchronize duration
-    video = video.set_audio(audio).set_duration(audio.duration)
-    logger.info(f"Video duration: {video.duration}")
 
-    # Write video to file
-    video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+def create_video_from_image_and_audio(image_path: str, audio_path: str) -> ImageClip:
+    """Synchronously create a video clip from an image and audio."""
+    # Load audio to calculate duration
+    audio_clip = AudioFileClip(audio_path)
+    audio_duration = audio_clip.duration
+
+    # Create an image clip and set duration
+    image_clip = ImageClip(image_path).set_duration(audio_duration)
+
+    # Set the audio to the image clip
+    return image_clip.set_audio(audio_clip).set_duration(audio_duration)
+
+
+async def concatenate_videos_async(video_clips: List[ImageClip]) -> str:
+    """Concatenate video clips asynchronously and save to a file."""
+    output_path = f"{uuid4()}.mp4"
+
+    # Offload concatenation to a thread
+    await asyncio.to_thread(
+        lambda: concatenate_videoclips(video_clips, method="compose").write_videofile(
+            output_path, fps=24, codec="libx264", audio_codec="aac"
+        )
+    )
+
+    return output_path
 
 
 @router.post("/generate")
-async def generate_video(
-    images: list[str] = Form(...),
-    audio: UploadFile = File(...),
-):
+async def generate_video(payload: VideoPayload):
+    """
+    Generate a video by merging multiple image and audio pairs, and concatenating the resulting videos.
+
+    Payload: list of {"url_image": str, "url_sound": str}
+    """
     try:
-        # Save audio file temporarily
-        audio_temp_file = NamedTemporaryFile(delete=False, suffix=".mp3")
-        logger.info(f"Writing audio to {audio_temp_file.name}")
-        with open(audio_temp_file.name, "wb") as f:
-            f.write(await audio.read())
-        logger.info(f"Wrote audio to {audio_temp_file.name}")
+        if not payload.items:
+            raise HTTPException(status_code=400, detail="No input provided")
 
-        # Download images
-        image_paths = [download_image(uri) for uri in images]
-        logger.info(f"Downloaded {len(image_paths)} images")
+        # List to store video clips
+        video_clips = []
 
-        # Check if images were provided
-        if not image_paths:
-            raise HTTPException(status_code=400, detail="No images provided")
+        # Download all files and process each image-audio pair
+        tasks = []
+        for item in payload.items:
+            tasks.append(
+                asyncio.gather(
+                    download_file_async(item.url_image, ".jpg"),
+                    download_file_async(item.url_sound, ".mp3"),
+                )
+            )
 
-        # Create the video
-        output_path = f"{uuid4()}.mp4"
-        logger.info(f"Creating video at {output_path}")
-        create_video_with_audio(image_paths, audio_temp_file.name, output_path)
-        logger.info(f"Created video at {output_path}")
+        # Await downloads
+        downloaded_files = await asyncio.gather(*tasks)
+
+        # Process video pairs
+        for image_path, sound_path in downloaded_files:
+            video_clip = await process_video_pair(image_path, sound_path)
+            video_clips.append(video_clip)
+
+        # Concatenate all video clips
+        output_path = await concatenate_videos_async(video_clips)
+
+        # Clean up temporary files
+        for image_path, sound_path in downloaded_files:
+            os.remove(image_path)
+            os.remove(sound_path)
 
         # Return the video as a streaming response
         return StreamingResponse(
