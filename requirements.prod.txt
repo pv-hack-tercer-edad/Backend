@@ -6,3 +6,4 @@ sqlmodel
 pydantic-extra-types
 psycopg2
 pendulum
+clerk-backend-api

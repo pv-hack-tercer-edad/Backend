@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import List, Optional
 
-from pendulum import now
 from pydantic import EmailStr
-from pydantic_extra_types.pendulum_dt import DateTime
-from sqlmodel import Field, SQLModel, Column, TIMESTAMP, text
+from sqlmodel import Field, Relationship, SQLModel
+
+from src.schemas.vital_signs_history import VitalSignsHistory
 
 
 class UserBase(SQLModel):
@@ -16,6 +16,8 @@ class UserBase(SQLModel):
 class User(UserBase, table=True):
     __tablename__: str = "user"
     id: Optional[int] = Field(default=None, primary_key=True)
+
+    vital_signs_history: List["VitalSignsHistory"] = Relationship(back_populates="user")
 
 
 class UserCreate(UserBase):
