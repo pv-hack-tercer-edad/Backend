@@ -8,7 +8,11 @@ from src.routers import (
     users,
     vital_signs,
     vital_signs_history,
+    video,
 )
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
@@ -19,6 +23,7 @@ app.include_router(observations.router)
 app.include_router(ficha.router)
 app.include_router(vital_signs.router)
 app.include_router(vital_signs_history.router)
+app.include_router(video.router)
 app.include_router(conversation_to_scenes.router)
 
 

@@ -1,1 +1,4 @@
 # Non-production dependencies
+pydantic-extra-types
+black
+isort

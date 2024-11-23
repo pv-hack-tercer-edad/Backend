@@ -3,10 +3,12 @@ fastapi[standard]
 uvicorn
 pydantic-settings
 sqlmodel
-pydantic-extra-types
 psycopg2
 pendulum
 clerk-backend-api
 boto3
-openai
+moviepy>=1.0.0,<2.0.0
 requests
+aiohttp
+aiofiles
+openai
