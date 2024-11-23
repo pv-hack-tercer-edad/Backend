@@ -26,13 +26,19 @@ docker tag "${ECR_REPOSITORY_NAME}:${IMAGE_TAG}" "${AWS_ACCOUNT_ID}.dkr.ecr.${AW
 echo "Pushing the image to ECR..."
 docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${IMAGE_TAG}"
 
-echo "New Task Definition ARN: $NEW_TASK_DEFINITION"
+# Step 5: Register the task definition
+echo "Registering the task definition..."
+TASK_DEFINITION_ARN=$(aws ecs register-task-definition \
+    --cli-input-json file://task-definition.json \
+    --query 'taskDefinition.taskDefinitionArn' \
+    --output text)
 
 # Step 6: Update ECS Service with the New Task Definition
 echo "Updating ECS Service..."
 aws ecs update-service \
     --cluster $CLUSTER_NAME \
     --service $SERVICE_NAME \
+    --task-definition $TASK_DEFINITION_ARN \
     --no-cli-pager
 
 # Step 7: Wait for the service to stabilize

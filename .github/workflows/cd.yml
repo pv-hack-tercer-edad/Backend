@@ -49,21 +49,31 @@ jobs:
       run: |
         docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$IMAGE_TAG
 
-    # Step 6: Update ECS Service with the new task definition
+    # Step 6: Register ECS Task Definition
+    - name: Register ECS Task Definition
+      id: register_task
+      run: |
+        NEW_TASK_DEFINITION=$(aws ecs register-task-definition \
+          --cli-input-json file://task-definition.json \
+          --query 'taskDefinition.taskDefinitionArn' --output text)
+        echo "task_definition_arn=$NEW_TASK_DEFINITION" >> $GITHUB_ENV
+
+    # Step 7: Update ECS Service with the new task definition
     - name: Update ECS Service
       run: |
         aws ecs update-service \
           --cluster $CLUSTER_NAME \
           --service $SERVICE_NAME \
+          --task-definition $NEW_TASK_DEFINITION \
           --no-cli-pager
 
-    # Step 7: Wait for the ECS service to stabilize
+    # Step 8: Wait for the ECS service to stabilize
     - name: Wait for ECS service to stabilize
       run: |
         aws ecs wait services-stable \
           --cluster $CLUSTER_NAME \
           --services $SERVICE_NAME
 
-    # Step 8: Notify deployment completion
+    # Step 9: Notify deployment completion
     - name: Deployment completed
       run: echo "Deployment to AWS ECS completed successfully!"
