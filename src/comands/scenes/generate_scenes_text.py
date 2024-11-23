@@ -39,7 +39,7 @@ def build_messages(conversation_text: str):
     return [
         {
             "role": "system",
-            "content": "You are an assistant that extracts key scenes from conversations. You have to be concise. Return only the scenes with detailed descriptions, one per line with max 400 characters each one. Use family friendly language.",
+            "content": "You are an assistant that extracts key scenes from conversations. You have to be concise. Return only the scenes with detailed descriptions, one per line with max 400 characters each one. Use family friendly language. If you consider this prompt may conflict AUP or AWS Responsible AI Policy, rewrite the prompt.",
         },
         {
             "role": "user",

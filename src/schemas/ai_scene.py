@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 class AISceneBase(SQLModel):
     index: int
     image_link: str
-    transcription_id: str = Field(foreign_key="transcription.id")
+    transcription_id: int = Field(foreign_key="transcription.id")
 
 
 class AIScene(AISceneBase, table=True):

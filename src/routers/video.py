@@ -39,7 +39,9 @@ async def download_file_async(url: str, suffix: str) -> str:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
-                raise HTTPException(status_code=response.status, detail=f"Failed to download {url}")
+                raise HTTPException(
+                    status_code=response.status, detail=f"Failed to download {url}"
+                )
             temp_file = NamedTemporaryFile(delete=False, suffix=suffix)
             async with aiofiles.open(temp_file.name, "wb") as f:
                 await f.write(await response.read())
@@ -49,7 +51,9 @@ async def download_file_async(url: str, suffix: str) -> str:
 async def process_video_pair(image_path: str, sound_path: str) -> ImageClip:
     """Process a single image-audio pair to generate a video clip."""
     # Offload CPU-bound processing to a thread
-    return await asyncio.to_thread(create_video_from_image_and_audio, image_path, sound_path)
+    return await asyncio.to_thread(
+        create_video_from_image_and_audio, image_path, sound_path
+    )
 
 
 def create_video_from_image_and_audio(image_path: str, audio_path: str) -> ImageClip:
@@ -99,7 +103,9 @@ async def generate_video(chapter_id: int, session: Session = Depends(get_session
         for scene in chapter.transcription.ai_scenes:
             tasks.append(
                 asyncio.gather(
-                    download_file_async(f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png"),
+                    download_file_async(
+                        f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png"
+                    ),
                     download_file_async(chapter.transcription.recording_link, ".wav"),
                 )
             )
@@ -118,6 +124,7 @@ async def generate_video(chapter_id: int, session: Session = Depends(get_session
         with open(output_path, "rb") as f:
             video_link = save_video_to_s3(f.read(), f"video_{chapter_id}.mp4")
         chapter.video_link = f"{settings.aws_s3_bucket_url}/{video_link}"
+        chapter.status = "DONE"
         session.commit()
         # Clean up temporary files
         for image_path, sound_path in downloaded_files:
