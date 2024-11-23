@@ -8,14 +8,13 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 
 # Copy the requirements file
-COPY requirements*.txt .
+COPY requirements.prod.txt .
 
 # Install dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.prod.txt
 
 # Copy the application code
 COPY ./src .
 
 # Run the application
-ENTRYPOINT ["fastapi", "dev", "src/main.py", "--port", "8000"]
+CMD ["fastapi", "run", "src/main.py", "--port", "8000"]
