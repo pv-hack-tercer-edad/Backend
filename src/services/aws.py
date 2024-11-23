@@ -55,6 +55,6 @@ def get_bedrock_request(prompt: str):
 
 def get_base_image():
     image_base64 = None
-    with open("output/image_2.png", "rb") as image_file:
+    with open("output/base_image.png", "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode("utf-8")
     return image_base64
