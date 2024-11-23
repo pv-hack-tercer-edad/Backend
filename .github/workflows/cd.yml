@@ -58,22 +58,33 @@ jobs:
           --query 'taskDefinition.taskDefinitionArn' --output text)
         echo "task_definition_arn=$NEW_TASK_DEFINITION" >> $GITHUB_ENV
 
-    # Step 7: Update ECS Service with the new task definition
+    # Step 7: Fetch the latest ECS Task Definition ARN
+    - name: Fetch latest ECS Task Definition ARN
+      id: fetch_latest_task
+      run: |
+        LATEST_TASK_DEFINITION=$(aws ecs list-task-definitions \
+          --family-prefix $TASK_DEFINITION_NAME \
+          --sort DESC \
+          --max-items 1 \
+          --query 'taskDefinitionArns[0]' --output text)
+        echo "latest_task_definition_arn=$LATEST_TASK_DEFINITION" >> $GITHUB_ENV
+
+    # Step 8: Update ECS Service with the latest task definition
     - name: Update ECS Service
       run: |
         aws ecs update-service \
           --cluster $CLUSTER_NAME \
           --service $SERVICE_NAME \
-          --task-definition ${{ env.task_definition_arn }} \
+          --task-definition ${{ env.latest_task_definition_arn }} \
           --no-cli-pager
 
-    # Step 8: Wait for the ECS service to stabilize
+    # Step 9: Wait for the ECS service to stabilize
     - name: Wait for ECS service to stabilize
       run: |
         aws ecs wait services-stable \
           --cluster $CLUSTER_NAME \
           --services $SERVICE_NAME
 
-    # Step 9: Notify deployment completion
+    # Step 10: Notify deployment completion
     - name: Deployment completed
       run: echo "Deployment to AWS ECS completed successfully!"
