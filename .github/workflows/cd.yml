@@ -64,7 +64,7 @@ jobs:
         aws ecs update-service \
           --cluster $CLUSTER_NAME \
           --service $SERVICE_NAME \
-          --task-definition $NEW_TASK_DEFINITION \
+          --task-definition ${{ env.task_definition_arn }} \
           --no-cli-pager
 
     # Step 8: Wait for the ECS service to stabilize
