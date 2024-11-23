@@ -1,0 +1,69 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+    - main # Trigger on push to the main branch. Adjust as needed.
+
+jobs:
+  deploy:
+    name: Deploy to AWS ECS
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-2
+      AWS_ACCOUNT_ID: 145001347266
+      ECR_REPOSITORY_NAME: platanus-hack
+      IMAGE_TAG: latest
+      CLUSTER_NAME: platanus-hack-cluster
+      SERVICE_NAME: hackathon-platanus-service
+      TASK_DEFINITION_NAME: platanus-hack-task
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Step 2: Set up AWS credentials
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    # Step 3: Authenticate Docker to AWS ECR
+    - name: Authenticate Docker with AWS ECR
+      run: |
+        aws ecr get-login-password --region $AWS_REGION | \
+        docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+    # Step 4: Build and tag Docker image
+    - name: Build and tag Docker image
+      run: |
+        docker build -t $ECR_REPOSITORY_NAME:$IMAGE_TAG .
+        docker tag $ECR_REPOSITORY_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+
+    # Step 5: Push Docker image to ECR
+    - name: Push Docker image to ECR
+      run: |
+        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+
+    # Step 6: Update ECS Service with the new task definition
+    - name: Update ECS Service
+      run: |
+        aws ecs update-service \
+          --cluster $CLUSTER_NAME \
+          --service $SERVICE_NAME \
+          --no-cli-pager
+
+    # Step 7: Wait for the ECS service to stabilize
+    - name: Wait for ECS service to stabilize
+      run: |
+        aws ecs wait services-stable \
+          --cluster $CLUSTER_NAME \
+          --services $SERVICE_NAME
+
+    # Step 8: Notify deployment completion
+    - name: Deployment completed
+      run: echo "Deployment to AWS ECS completed successfully!"

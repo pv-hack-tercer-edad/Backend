@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 
 from src.routers import (
+    conversation_to_scenes,
+    ficha,
+    observations,
     onboarding,
     users,
-    observations,
-    ficha,
     vital_signs,
     vital_signs_history,
     video,
@@ -23,6 +24,7 @@ app.include_router(ficha.router)
 app.include_router(vital_signs.router)
 app.include_router(vital_signs_history.router)
 app.include_router(video.router)
+app.include_router(conversation_to_scenes.router)
 
 
 @app.get("/")
