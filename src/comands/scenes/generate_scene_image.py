@@ -12,12 +12,13 @@ client = boto3.client("bedrock-runtime", region_name="us-east-1")
 
 def generate_scene_image(scene: str, idx: int, transcription_id: int, session: Session):
     prompt = generate_prompt(scene)
-
+    if len(prompt) > 511:
+        prompt = prompt[:511]
     image_buffer = bedrock_generate_image(prompt)
     image_key = save_image_to_s3(image_buffer, f"scene_{transcription_id}_{idx+1}.png")
     new_scene = AIScene(
         index=idx,
-        image_key=image_key,
+        image_link=image_key,
         transcription_id=transcription_id,
     )
     session.add(new_scene)

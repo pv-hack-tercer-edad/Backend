@@ -3,7 +3,7 @@ import aiofiles
 from io import BytesIO
 from uuid import uuid4
 import asyncio
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from moviepy.editor import AudioFileClip, ImageClip, concatenate_videoclips
 from pydantic import BaseModel, HttpUrl
@@ -11,6 +11,13 @@ from typing import List
 import logging
 import os
 from tempfile import NamedTemporaryFile
+
+from sqlmodel import Session
+
+from src.services.aws import save_video_to_s3
+from src.config.settings import settings
+from src.schemas.chapter import Chapter
+from src.config.db import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -76,27 +83,30 @@ async def concatenate_videos_async(video_clips: List[ImageClip]) -> str:
     return output_path
 
 
-@router.post("/generate")
-async def generate_video(payload: VideoPayload):
+@router.post("/generate/{chapter_id}")
+async def generate_video(chapter_id: int, session: Session = Depends(get_session)):
     """
     Generate a video by merging multiple image and audio pairs, and concatenating the resulting videos.
 
     Payload: list of {"url_image": str, "url_sound": str}
     """
     try:
-        if not payload.items:
-            raise HTTPException(status_code=400, detail="No input provided")
+        chapter = session.get(Chapter, chapter_id)
+        if not chapter:
+            raise HTTPException(status_code=404, detail="Chapter not found")
 
         # List to store video clips
         video_clips = []
 
         # Download all files and process each image-audio pair
         tasks = []
-        for item in payload.items:
+        for scene in chapter.transcription.ai_scenes:
             tasks.append(
                 asyncio.gather(
-                    download_file_async(item.url_image, ".jpg"),
-                    download_file_async(item.url_sound, ".mp3"),
+                    download_file_async(
+                        f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png"
+                    ),
+                    download_file_async(chapter.transcription.recording_link, ".wav"),
                 )
             )
 
@@ -117,11 +127,10 @@ async def generate_video(payload: VideoPayload):
             os.remove(sound_path)
 
         # Return the video as a streaming response
-        return StreamingResponse(
-            open(output_path, "rb"),
-            media_type="video/mp4",
-            headers={"Content-Disposition": f"attachment; filename={output_path}"},
-        )
+        video_link = save_video_to_s3(output_path, f"video_{chapter_id}.mp4")
+        chapter.video_link = f"{settings.aws_s3_bucket_url}/{video_link}"
+        session.commit()
+        return video_link
     except Exception as e:
         logger.error(f"Error generating video: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

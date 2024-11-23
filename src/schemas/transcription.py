@@ -3,6 +3,7 @@ from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
     from src.schemas.ai_scene import AIScene
+    from src.schemas.chapter import Chapter
 
 
 class TranscriptionBase(SQLModel):
@@ -16,6 +17,7 @@ class Transcription(TranscriptionBase, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     ai_scenes: List["AIScene"] = Relationship(back_populates="transcription")
+    chapter: "Chapter" = Relationship(back_populates="transcription")
 
 
 class TranscriptionCreate(TranscriptionBase):

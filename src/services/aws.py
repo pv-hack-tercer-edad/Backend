@@ -12,6 +12,22 @@ bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
 BUCKET_NAME = settings.aws_s3_bucket
 
 
+def save_video_to_s3(video_buffer: str, video_name: str) -> str:
+    logger.info(f"Saving video to S3: {video_name}")
+    try:
+        s3_client.put_object(
+            Bucket=BUCKET_NAME,
+            Key=video_name,
+            Body=video_buffer,
+            ContentType="video/mp4",
+        )
+        logger.info(f"Successfully saved video to S3: {video_name}")
+        return video_name
+    except Exception as e:
+        logger.error(f"Error saving video to S3: {str(e)}")
+        raise
+
+
 def save_image_to_s3(image_buffer: str, image_name: str) -> str:
     logger.info(f"Saving image to S3: {image_name}")
     try:
