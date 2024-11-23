@@ -1,5 +1,5 @@
 # Use an official Python image as the base
-FROM python:3.11-slim
+FROM --platform=linux/amd64 python:3.11-slim
 
 # Set the working directory
 WORKDIR /app
@@ -14,7 +14,7 @@ COPY requirements.prod.txt .
 RUN pip install --no-cache-dir --upgrade -r requirements.prod.txt
 
 # Copy the application code
-COPY ./src .
+COPY ./src /app/src
 
 # Run the application
-CMD ["fastapi", "run", "src/main.py", "--port", "8000"]
+CMD ["fastapi", "run", "src/main.py", "--port", "8080", "--host", "0.0.0.0"]
