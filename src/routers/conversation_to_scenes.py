@@ -27,9 +27,11 @@ async def process_conversation(
         )
         chapter.status = "PROCESSING"
         session.add(new_transcription)
+        session.commit()
+        session.refresh(chapter)
         print(new_transcription)
         generate_scenes(new_transcription.content, new_transcription.id, session)
-        generate_video(chapter_id, session)
+        await generate_video(chapter_id, session)
     except Exception as e:
         logger.error(f"Error processing conversation: {str(e)}")
         session.rollback()
