@@ -7,6 +7,7 @@ from config import settings
 from config.db import get_session
 from routers.conversation_to_scenes import process_conversation
 from schemas.chapter import Chapter
+from schemas.transcription import Transcription
 
 router = APIRouter(prefix="/retell", tags=["retell"])
 
@@ -46,8 +47,13 @@ def get_call(
     chapter = session.get(Chapter, chapter_id)
     if chapter is None:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    chapter.transcription.content = web_call_response.transcription
-    chapter.transcription.recording_link = web_call_response.recording_url
+    new_transcription = Transcription(
+        text=web_call_response.transcription,
+        chapter_id=chapter_id,
+    )
+    chapter.transcription = new_transcription
+    session.add(chapter)
+    session.add(new_transcription)
     session.commit()
     session.refresh(chapter)
     background_tasks.add_task(process_conversation, chapter_id, session)

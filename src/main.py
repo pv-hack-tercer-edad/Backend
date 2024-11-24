@@ -8,6 +8,7 @@ from src.routers import (
     conversation_to_scenes,
     ai_scene,
     video,
+    retell,
 )
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,6 +32,7 @@ app.include_router(chapter.router)
 app.include_router(video.router)
 app.include_router(conversation_to_scenes.router)
 app.include_router(ai_scene.router)
+app.include_router(retell.router)
 
 
 @app.get("/")
