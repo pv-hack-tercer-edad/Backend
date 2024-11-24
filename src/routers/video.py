@@ -120,9 +120,8 @@ async def generate_video(chapter_id: int, session: Session):
         chapter.status = "DONE"
         session.commit()
         # Clean up temporary files
-        for image_path, sound_path in downloaded_files:
-            os.remove(image_path)
-            os.remove(sound_path)
+        for path in downloaded_files:
+            os.remove(path)
         return video_link
     except Exception as e:
         logger.error(f"Error generating video: {str(e)}", exc_info=True)
