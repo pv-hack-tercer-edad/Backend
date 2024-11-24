@@ -11,6 +11,7 @@ class ChapterBase(SQLModel):
     story_id: int = Field(foreign_key="story.id")
     status: str
     title: str
+    description: str
     video_link: Optional[str]
 
 

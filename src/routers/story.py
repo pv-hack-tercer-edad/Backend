@@ -43,9 +43,24 @@ def create_story(
         session.refresh(db_story)
 
         chapters_data = [
-            {"title": "Infancia", "story_id": db_story.id, "status": "WIP"},
-            {"title": "Primer amor", "story_id": db_story.id, "status": "WIP"},
-            {"title": "Vejez", "story_id": db_story.id, "status": "WIP"},
+            {
+                "title": "Infancia",
+                "story_id": db_story.id,
+                "status": "WIP",
+                "description": "¿Cuales son tus recuerdos más hermosos de la infancia?",
+            },
+            {
+                "title": "Primer amor",
+                "story_id": db_story.id,
+                "status": "WIP",
+                "description": "¿Cual fue tu primer gran amor?",
+            },
+            {
+                "title": "Vejez",
+                "story_id": db_story.id,
+                "status": "WIP",
+                "description": "¿Que fuiste sintiendo a medida que pasaron los años y te volviste mayor?",
+            },
         ]
         db_chapters = []
         for chapter_data in chapters_data:
