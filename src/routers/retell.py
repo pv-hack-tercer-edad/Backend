@@ -47,14 +47,20 @@ def get_call(
     chapter = session.get(Chapter, chapter_id)
     if chapter is None:
         raise HTTPException(status_code=404, detail="Chapter not found")
-    new_transcription = Transcription(
-        chapter_id=chapter_id,
-        content=web_call_response.transcript,
-        recording_link=web_call_response.recording_url,
-    )
-    chapter.transcription = new_transcription
+    if chapter.transcription is None:
+        transcription = Transcription(
+            chapter_id=chapter_id,
+            content=web_call_response.transcript,
+            recording_link=web_call_response.recording_url,
+        )
+        chapter.transcription = transcription
+    else:
+        transcription = chapter.transcription
+        transcription.content = web_call_response.transcript
+        transcription.recording_link = web_call_response.recording_url
+
     session.add(chapter)
-    session.add(new_transcription)
+    session.add(transcription)
     session.commit()
     session.refresh(chapter)
     background_tasks.add_task(process_conversation, chapter_id, session)
