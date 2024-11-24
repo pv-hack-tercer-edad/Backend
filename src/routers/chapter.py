@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.future import select
 
 from src.schemas.chapter import Chapter, ChapterCreate, ChapterRead
+from src.schemas.story import Story
+
 from src.config.db import get_session
+from typing import List
 
 
 router = APIRouter(prefix="/chapter", tags=["chapter"])
@@ -36,3 +40,16 @@ def create_chapter(
         raise HTTPException(
             status_code=500, detail="An error occured when creating the metric"
         )
+
+
+@router.get("/", response_model=List[ChapterRead])
+def get_chapters(
+    user_id: int,
+    session: Session = Depends(get_session),
+):
+    try:
+        query = select(Chapter).join(Story).where(Story.user_id == user_id)
+        chapters = session.scalars(query).all()
+        return chapters
+    except Exception:
+        raise HTTPException(status_code=404, detail="Chapter not found")
