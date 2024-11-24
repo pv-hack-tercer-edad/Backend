@@ -22,6 +22,10 @@
                 {
                     "name": "AWS_REGION",
                     "value": "us-east-2"
+                },
+                {
+                    "name": "RETELL_AI_AGENT_ID",
+                    "value": "agent_63bb7d6952d77282eebf5b9529"
                 }
             ],
             "mountPoints": [],
@@ -42,6 +46,10 @@
                 {
                     "name": "OPENAI_API_KEY",
                     "valueFrom": "arn:aws:secretsmanager:us-east-2:145001347266:secret:PLATANUS_HACK_OPENAI_API_KEY-r9uOIE"
+                },
+                {
+                    "name": "RETELL_AI_API_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-2:145001347266:secret:RETELL_API_KEY-A7ISki"
                 }
             ],
             "logConfiguration": {
