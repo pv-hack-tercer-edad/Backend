@@ -46,28 +46,19 @@ async def download_file_async(url: str, suffix: str) -> str:
             return temp_file.name
 
 
-async def process_video_pair(image_path: str, sound_path: str, index: int, total: int) -> ImageClip:
+def process_video_pair(image_path: str, sound_path: str, index: int, total: int) -> ImageClip:
     """Process a single image-audio pair to generate a video clip."""
     # Offload CPU-bound processing to a thread
-    return await asyncio.to_thread(create_video_from_image_and_audio, image_path, sound_path, index, total)
+    return create_video_from_image_and_audio(image_path, sound_path, index, total)
 
 
 def create_video_from_image_and_audio(image_path: str, audio_path: str, index: int, total: int) -> ImageClip:
     """Synchronously create a video clip from an image and audio."""
     # Load audio to calculate duration
     audio_clip = AudioFileClip(audio_path)
-    audio_duration = audio_clip.duration
-    print(f"audio duration: {audio_duration}")
-    print(f"start: {index / total * audio_duration}")
-    print(f"duration: {audio_duration / total}")
-    audio_clip = audio_clip.set_start(index / total * audio_duration).set_duration(audio_duration / total)
-
-    # Create an image clip and set duration
-    # image_clip = ImageClip(image_path).set_duration(audio_duration)
-    image_clip = ImageClip(image_path).set_start(index / total * audio_duration).set_duration(audio_duration / total)
-
+    image_clip = ImageClip(image_path)
     # Set the audio to the image clip
-    return image_clip.set_audio(audio_clip)
+    return image_clip.set_audio(audio_clip).set_duration(audio_clip.duration)
 
 
 async def concatenate_videos_async(video_clips: List[ImageClip]) -> str:
@@ -121,7 +112,7 @@ async def generate_video(chapter_id: int, session: Session):
         for index, image_path in enumerate(image_paths):
             print(f"image_path: {image_path}")
             print(f"sound_path: {sound_path}")
-            video_clip = await process_video_pair(image_path, sound_path, index, len(image_paths))
+            video_clip = process_video_pair(image_path, sound_path, index, len(image_paths))
             print(f"the video clip is {video_clip}")
             video_clips.append(video_clip)
 
