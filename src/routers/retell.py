@@ -13,6 +13,11 @@ from src.schemas.transcription import Transcription
 router = APIRouter(prefix="/retell", tags=["retell"])
 
 
+class GetCallRequest(BaseModel):
+    call_id: str
+    chapter_id: int
+
+
 class WebCallRequest(BaseModel):
     category: str
 
@@ -36,8 +41,7 @@ def create_web_call(
 
 @router.post("/get-call")
 def get_call(
-    call_id: str,
-    chapter_id: int,
+    request: GetCallRequest,
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
 ):
@@ -50,18 +54,18 @@ def get_call(
     attempt = 1
     while not (web_call_response_transcript and web_call_response_recording_url):
         print(f"attempt to get transcription:{attempt}")
-        web_call_response = client.call.retrieve(call_id)
+        web_call_response = client.call.retrieve(request.call_id)
         web_call_response_transcript = web_call_response.transcript
         web_call_response_recording_url = web_call_response.recording_url
         attempt += 1
         sleep(1)
-    chapter = session.get(Chapter, chapter_id)
+    chapter = session.get(Chapter, request.chapter_id)
     if chapter is None:
         raise HTTPException(status_code=404, detail="Chapter not found")
     chapter.video_link = None
     if chapter.transcription is None:
         transcription = Transcription(
-            chapter_id=chapter_id,
+            chapter_id=request.chapter_id,
             content=web_call_response.transcript,
             recording_link=web_call_response.recording_url,
         )
@@ -75,5 +79,5 @@ def get_call(
     session.add(transcription)
     session.commit()
     session.refresh(chapter)
-    background_tasks.add_task(process_conversation, chapter_id, session)
+    background_tasks.add_task(process_conversation, request.chapter_id, session)
     return chapter
