@@ -59,10 +59,11 @@ def create_video_from_image_and_audio(image_path: str, audio_path: str, index: i
     audio_duration = audio_clip.duration
 
     # Create an image clip and set duration
-    image_clip = ImageClip(image_path).set_start(index / total * audio_duration)
+    image_clip = ImageClip(image_path)
+    image_clip.set_start(index / total * audio_duration)
+    image_clip.set_duration(audio_duration / total)
 
-    # Set the audio to the image clip
-    return image_clip.set_audio(audio_clip).set_duration(audio_duration)
+    return image_clip
 
 
 async def concatenate_videos_async(video_clips: List[ImageClip]) -> str:
