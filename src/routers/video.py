@@ -57,25 +57,32 @@ def create_video_from_image_and_audio(image_path: str, audio_path: str, index: i
     # Load audio to calculate duration
     audio_clip = AudioFileClip(audio_path)
     audio_duration = audio_clip.duration
+    print(f"audio duration: {audio_duration}")
+    print(f"start: {index / total * audio_duration}")
+    print(f"duration: {audio_duration / total}")
+    audio_clip = audio_clip.set_start(index / total * audio_duration).set_duration(audio_duration / total)
 
     # Create an image clip and set duration
-    image_clip = ImageClip(image_path)
-    image_clip.set_start(index / total * audio_duration)
-    image_clip.set_duration(audio_duration / total)
+    # image_clip = ImageClip(image_path).set_duration(audio_duration)
+    image_clip = ImageClip(image_path).set_start(index / total * audio_duration).set_duration(audio_duration / total)
 
-    return image_clip
+    # Set the audio to the image clip
+    return image_clip.set_audio(audio_clip)
 
 
 async def concatenate_videos_async(video_clips: List[ImageClip]) -> str:
     """Concatenate video clips asynchronously and save to a file."""
     output_path = f"{uuid4()}.mp4"
-
+    print(f"The output path is {output_path}")
     # Offload concatenation to a thread
-    await asyncio.to_thread(
-        lambda: concatenate_videoclips(video_clips, method="compose").write_videofile(
-            output_path, fps=24, codec="libx264", audio_codec="aac"
+    if len(video_clips) > 1:
+        await asyncio.to_thread(
+            lambda: concatenate_videoclips(video_clips, method="compose").write_videofile(
+                output_path, fps=24, codec="libx264", audio_codec="aac"
+            )
         )
-    )
+    else:
+        video_clips[0].write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
 
     return output_path
 
@@ -96,6 +103,7 @@ async def generate_video(chapter_id: int, session: Session):
         video_clips = []
 
         # Download all files and process each image-audio pair
+        print(f"chapter.transcription.ai_scenes: {chapter.transcription.ai_scenes}")
         tasks = [
             download_file_async(f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png")
             for scene in chapter.transcription.ai_scenes
@@ -105,14 +113,24 @@ async def generate_video(chapter_id: int, session: Session):
         # Await downloads
         downloaded_files = await asyncio.gather(*tasks)
         image_paths = [path for path in downloaded_files if path.endswith(".png")]
-        sound_paths = [path for path in downloaded_files if path.endswith(".wav")]
+        sound_path = [path for path in downloaded_files if path.endswith(".wav")][0]
+        print(f"image_paths: {image_paths}")
+        print(f"sound_path: {sound_path}")
 
         # Process video pairs
-        for image_path, sound_path, index in zip(image_paths, sound_paths, range(len(image_paths))):
+        for index, image_path in enumerate(image_paths):
+            print(f"image_path: {image_path}")
+            print(f"sound_path: {sound_path}")
             video_clip = await process_video_pair(image_path, sound_path, index, len(image_paths))
+            print(f"the video clip is {video_clip}")
             video_clips.append(video_clip)
 
         # Concatenate all video clips
+        print(f"video_clips: {video_clips}")
+        for video_clip in video_clips:
+            print(f"duration: {video_clip.duration}")
+            print(f"start: {video_clip.start}")
+            print(f"end: {video_clip.end}")
         output_path = await concatenate_videos_async(video_clips)
 
         with open(output_path, "rb") as f:

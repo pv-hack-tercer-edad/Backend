@@ -27,16 +27,12 @@ async def process_conversation(
     attempt = 0
     while attempt < retry:
         try:
-            generate_scenes(
-                chapter.transcription.content, chapter.transcription.id, session
-            )
+            generate_scenes(chapter.transcription.content, chapter.transcription.id, session)
             break
         except Exception as e:
             attempt += 1
             if attempt >= retry:
                 logger.error(f"Error processing conversation: {str(e)}")
                 session.rollback()
-                raise HTTPException(
-                    status_code=500, detail=f"Error processing conversation: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Error processing conversation: {str(e)}")
     await generate_video(chapter_id, session)
