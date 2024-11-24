@@ -39,20 +39,26 @@ async def download_file_async(url: str, suffix: str) -> str:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
-                raise HTTPException(status_code=response.status, detail=f"Failed to download {url}")
+                raise HTTPException(
+                    status_code=response.status, detail=f"Failed to download {url}"
+                )
             temp_file = NamedTemporaryFile(delete=False, suffix=suffix)
             async with aiofiles.open(temp_file.name, "wb") as f:
                 await f.write(await response.read())
             return temp_file.name
 
 
-def process_video_pair(image_path: str, sound_path: str, index: int, total: int) -> ImageClip:
+def process_video_pair(
+    image_path: str, sound_path: str, index: int, total: int
+) -> ImageClip:
     """Process a single image-audio pair to generate a video clip."""
     # Offload CPU-bound processing to a thread
     return create_video_from_image_and_audio(image_path, sound_path, index, total)
 
 
-def create_video_from_image_and_audio(image_path: str, audio_path: str, index: int, total: int) -> ImageClip:
+def create_video_from_image_and_audio(
+    image_path: str, audio_path: str, index: int, total: int
+) -> ImageClip:
     """Synchronously create a video clip from an image and audio."""
     # Load audio to calculate duration
     audio_clip = AudioFileClip(audio_path)
@@ -68,12 +74,14 @@ async def concatenate_videos_async(video_clips: List[ImageClip]) -> str:
     # Offload concatenation to a thread
     if len(video_clips) > 1:
         await asyncio.to_thread(
-            lambda: concatenate_videoclips(video_clips, method="compose").write_videofile(
-                output_path, fps=24, codec="libx264", audio_codec="aac"
-            )
+            lambda: concatenate_videoclips(
+                video_clips, method="compose"
+            ).write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
         )
     else:
-        video_clips[0].write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+        video_clips[0].write_videofile(
+            output_path, fps=24, codec="libx264", audio_codec="aac"
+        )
 
     return output_path
 
@@ -96,7 +104,9 @@ async def generate_video(chapter_id: int, session: Session):
         # Download all files and process each image-audio pair
         print(f"chapter.transcription.ai_scenes: {chapter.transcription.ai_scenes}")
         tasks = [
-            download_file_async(f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png")
+            download_file_async(
+                f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png"
+            )
             for scene in chapter.transcription.ai_scenes
         ]
         tasks.append(download_file_async(chapter.transcription.recording_link, ".wav"))
@@ -108,12 +118,23 @@ async def generate_video(chapter_id: int, session: Session):
         print(f"image_paths: {image_paths}")
         print(f"sound_path: {sound_path}")
 
-        # Process video pairs
+        # Load audio and calculate segment duration
+        audio_clip = AudioFileClip(sound_path)
+        total_duration = audio_clip.duration
+        segment_duration = total_duration / len(image_paths)
+
+        # Create video clips with equal durations
         for index, image_path in enumerate(image_paths):
-            print(f"image_path: {image_path}")
-            print(f"sound_path: {sound_path}")
-            video_clip = process_video_pair(image_path, sound_path, index, len(image_paths))
-            print(f"the video clip is {video_clip}")
+            print(f"Processing image {index + 1}/{len(image_paths)}")
+            image_clip = ImageClip(image_path)
+            start_time = index * segment_duration
+            video_clip = (
+                image_clip.set_start(start_time)
+                .set_duration(segment_duration)
+                .set_audio(
+                    audio_clip.subclip(start_time, start_time + segment_duration)
+                )
+            )
             video_clips.append(video_clip)
 
         # Concatenate all video clips
