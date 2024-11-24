@@ -3,11 +3,11 @@ from pydantic import BaseModel
 from retell import Retell
 from sqlmodel import Session
 
-from config import settings
-from config.db import get_session
-from routers.conversation_to_scenes import process_conversation
-from schemas.chapter import Chapter
-from schemas.transcription import Transcription
+from src.config.settings import settings
+from src.config.db import get_session
+from src.routers.conversation_to_scenes import process_conversation
+from src.schemas.chapter import Chapter
+from src.schemas.transcription import Transcription
 
 router = APIRouter(prefix="/retell", tags=["retell"])
 
@@ -25,7 +25,7 @@ def create_web_call(
     )
     web_call_response = client.call.create_web_call(
         agent_id=settings.retell_ai_agent_id,
-        retell_category={"category": request.category},
+        retell_llm_dynamic_variables={"category": request.category},
     )
     return {
         "call_id": web_call_response.call_id,
@@ -48,7 +48,7 @@ def get_call(
     if chapter is None:
         raise HTTPException(status_code=404, detail="Chapter not found")
     new_transcription = Transcription(
-        text=web_call_response.transcription,
+        text=web_call_response.transcript,
         chapter_id=chapter_id,
     )
     chapter.transcription = new_transcription
