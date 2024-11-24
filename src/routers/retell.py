@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 from retell import Retell
 from sqlmodel import Session
+from time import sleep
 
 from src.config.settings import settings
 from src.config.db import get_session
@@ -43,10 +44,21 @@ def get_call(
     client = Retell(
         api_key=settings.retell_ai_api_key,
     )
-    web_call_response = client.call.retrieve(call_id)
+
+    web_call_response_transcript = None
+    web_call_response_recording_url = None
+    attempt = 1
+    while not (web_call_response_transcript and web_call_response_recording_url):
+        print(f"attempt to get transcription:{attempt}")
+        web_call_response = client.call.retrieve(call_id)
+        web_call_response_transcript = web_call_response.transcript
+        web_call_response_recording_url = web_call_response.recording_url
+        attempt += 1
+        sleep(1)
     chapter = session.get(Chapter, chapter_id)
     if chapter is None:
         raise HTTPException(status_code=404, detail="Chapter not found")
+    chapter.video_link = None
     if chapter.transcription is None:
         transcription = Transcription(
             chapter_id=chapter_id,

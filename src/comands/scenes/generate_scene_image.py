@@ -42,7 +42,7 @@ def generate_scene_image(scene: str, idx: int, transcription_id: int, session: S
 
 
 def generate_prompt(scene: str) -> str:
-    return f"Minimalistic, cartoon, draw, description: {scene}"
+    return f"Minimalistic, cartoon, draw, no generate text, description: {scene}"
 
 
 def get_taskType(idx: int):

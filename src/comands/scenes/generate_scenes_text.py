@@ -45,6 +45,7 @@ def build_messages(conversation_text: str):
             "content": (
                 "You are an AI specialized in analyzing conversations to extract the most significant moments of a story being told. "
                 "Your task is to identify and return a list of key scenes or events that represent pivotal moments in the story. "
+                "Only extract information about user, not from agent. "
                 "Each scene must be a self-contained description, providing all the necessary context to understand it without requiring additional details. "
                 "Descriptions must be concise, with a maximum of 400 characters each, and written in family-friendly language. "
                 "Ensure the output is predictable and consistent across iterations, regardless of the story's complexity. "
