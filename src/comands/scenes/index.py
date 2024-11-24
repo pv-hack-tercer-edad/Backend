@@ -3,6 +3,7 @@ import logging
 from sqlmodel import Session
 from typing import List
 
+from src.schemas.transcription import Transcription
 from src.comands.scenes.generate_scenes_text import generate_scenes_texts
 from src.comands.scenes.generate_scene_image import generate_scene_image
 
@@ -18,6 +19,11 @@ def generate_scenes(text: str, transcription_id: int, session: Session):
 
 
 def generate_scenes_images(scenes: List[str], transcription_id: int, session: Session):
+    transcription = session.get(Transcription, transcription_id)
+    if len(transcription.ai_scenes) > 0:
+        for scene in transcription.ai_scenes:
+            session.delete(scene)
+    session.commit()
     processed_scenes = []
     for idx, scene in enumerate(scenes):
         logger.info(f"Processing scene {idx + 1}/{len(scenes)}")

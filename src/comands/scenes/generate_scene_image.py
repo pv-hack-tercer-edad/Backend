@@ -3,7 +3,6 @@ import boto3
 from fastapi import HTTPException
 from sqlmodel import Session
 
-from src.schemas.transcription import Transcription
 from src.schemas.ai_scene import AIScene
 from src.services.aws import save_image_to_s3, bedrock_generate_image
 
@@ -15,11 +14,6 @@ MAX_RETRIES = 3
 
 
 def generate_scene_image(scene: str, idx: int, transcription_id: int, session: Session):
-    transcription = session.get(Transcription, transcription_id)
-    if len(transcription.ai_scenes) > 0:
-        for scene in transcription.ai_scenes:
-            session.delete(scene)
-    session.commit()
     retries = 0
     while retries < MAX_RETRIES:
         try:
