@@ -34,7 +34,7 @@ def create_web_call(
     }
 
 
-@router.get("/get-call")
+@router.post("/get-call")
 def get_call(
     call_id: str,
     chapter_id: int,
