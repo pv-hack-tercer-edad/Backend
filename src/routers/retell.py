@@ -48,8 +48,9 @@ def get_call(
     if chapter is None:
         raise HTTPException(status_code=404, detail="Chapter not found")
     new_transcription = Transcription(
-        text=web_call_response.transcript,
         chapter_id=chapter_id,
+        content=web_call_response.transcript,
+        recording_link=web_call_response.recording_url,
     )
     chapter.transcription = new_transcription
     session.add(chapter)
