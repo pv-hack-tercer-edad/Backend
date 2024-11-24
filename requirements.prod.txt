@@ -13,3 +13,4 @@ aiohttp
 aiofiles
 openai
 pydantic-extra-types
+retell-sdk

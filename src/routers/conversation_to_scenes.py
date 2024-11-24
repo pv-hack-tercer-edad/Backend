@@ -1,10 +1,10 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from sqlmodel import Session
 
+from src.routers.video import generate_video
 from src.schemas.chapter import Chapter
 from src.schemas.transcription import Transcription
-from src.config.db import get_session
 from src.comands.scenes.index import generate_scenes
 
 # Configure logging
@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversation", tags=["conversation"])
 
 
-@router.post("/process-conversation/{chapter_id}")
+# @router.post("/process-conversation/{chapter_id}")
 async def process_conversation(
     chapter_id: int,
-    session: Session = Depends(get_session),
+    session: Session,
 ) -> None:
     try:
         chapter = session.get(Chapter, chapter_id)
@@ -29,8 +29,7 @@ async def process_conversation(
         session.add(new_transcription)
         print(new_transcription)
         generate_scenes(new_transcription.content, new_transcription.id, session)
-        session.commit()
-        return
+        generate_video(chapter_id, session)
     except Exception as e:
         logger.error(f"Error processing conversation: {str(e)}")
         session.rollback()

@@ -83,8 +83,8 @@ async def concatenate_videos_async(video_clips: List[ImageClip]) -> str:
     return output_path
 
 
-@router.post("/generate/{chapter_id}")
-async def generate_video(chapter_id: int, session: Session = Depends(get_session)):
+# @router.post("/generate/{chapter_id}")
+async def generate_video(chapter_id: int, session: Session):
     """
     Generate a video by merging multiple image and audio pairs, and concatenating the resulting videos.
 
@@ -133,4 +133,5 @@ async def generate_video(chapter_id: int, session: Session = Depends(get_session
         return video_link
     except Exception as e:
         logger.error(f"Error generating video: {str(e)}", exc_info=True)
+        session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
