@@ -17,10 +17,11 @@ def generate_scene_image(scene: str, idx: int, transcription_id: int, session: S
     retries = 0
     while retries < MAX_RETRIES:
         try:
+            taskType = get_taskType(idx)
             prompt = generate_prompt(scene)
             if len(prompt) > 511:
                 prompt = prompt[:511]
-            image_buffer = bedrock_generate_image(prompt)
+            image_buffer = bedrock_generate_image(prompt, taskType)
             image_key = save_image_to_s3(
                 image_buffer, f"scene_{transcription_id}_{idx+1}.png"
             )
@@ -42,3 +43,10 @@ def generate_scene_image(scene: str, idx: int, transcription_id: int, session: S
 
 def generate_prompt(scene: str) -> str:
     return f"Minimalistic, cartoon, draw, description: {scene}"
+
+
+def get_taskType(idx: int):
+    return "TEXT_IMAGE"
+    if idx == 0:
+        return "TEXT_IMAGE"
+    return "IMAGE_VARIATION"

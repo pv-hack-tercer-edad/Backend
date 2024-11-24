@@ -44,17 +44,40 @@ def save_image_to_s3(image_buffer: str, image_name: str) -> str:
         raise
 
 
-def bedrock_generate_image(prompt: str):
+def bedrock_generate_image(prompt: str, taskType: str):
     model_id = "amazon.titan-image-generator-v1"
-    native_request = get_bedrock_request(prompt)
+    native_request = get_bedrock_request(prompt, taskType)
     request = json.dumps(native_request)
     response = bedrock_client.invoke_model(modelId=model_id, body=request)
     model_response = json.loads(response["body"].read())
     base64_image_data = model_response["images"][0]
-    return base64.b64decode(base64_image_data)
+    image = base64.b64decode(base64_image_data)
+    if taskType == "TEXT_IMAGE":
+        write_base_image(image)
+    return image
 
 
-def get_bedrock_request(prompt: str):
+def get_bedrock_request(prompt: str, taskType):
+    if taskType == "TEXT_IMAGE":
+        return get_text_image_request(prompt)
+    return get_image_variation_request(prompt)
+
+
+def get_text_image_request(prompt: str):
+    return {
+        "textToImageParams": {"text": prompt},
+        "taskType": "TEXT_IMAGE",
+        "imageGenerationConfig": {
+            "cfgScale": 8,
+            "seed": 0,
+            "width": 512,
+            "height": 512,
+            "numberOfImages": 1,
+        },
+    }
+
+
+def get_image_variation_request(prompt: str):
     image_base64 = get_base_image()
     return {
         "imageVariationParams": {"images": [image_base64], "text": prompt},
@@ -62,9 +85,9 @@ def get_bedrock_request(prompt: str):
         "imageGenerationConfig": {
             "cfgScale": 8,
             "seed": 0,
-            "width": 1024,
-            "height": 1024,
-            "numberOfImages": 3,
+            "width": 512,
+            "height": 512,
+            "numberOfImages": 1,
         },
     }
 
@@ -74,3 +97,8 @@ def get_base_image():
     with open("output/base_image.png", "rb") as image_file:
         image_base64 = base64.b64encode(image_file.read()).decode("utf-8")
     return image_base64
+
+
+def write_base_image(image: bytes):
+    with open("output/base_image.png", "wb") as image_file:
+        image_file.write(image)
