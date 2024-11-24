@@ -4,7 +4,6 @@ from sqlmodel import Session
 
 from src.routers.video import generate_video
 from src.schemas.chapter import Chapter
-from src.schemas.transcription import Transcription
 from src.comands.scenes.index import generate_scenes
 
 # Configure logging
@@ -13,7 +12,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/conversation", tags=["conversation"])
 
 
-# @router.post("/process-conversation/{chapter_id}")
 async def process_conversation(
     chapter_id: int,
     session: Session,
@@ -32,6 +30,7 @@ async def process_conversation(
             generate_scenes(
                 chapter.transcription.content, chapter.transcription.id, session
             )
+            break
         except Exception as e:
             attempt += 1
             if attempt >= retry:
