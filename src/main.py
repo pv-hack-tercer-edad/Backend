@@ -7,7 +7,6 @@ from src.routers import (
     chapter,
     conversation_to_scenes,
     ai_scene,
-    generative_question,
     video,
 )
 import logging
@@ -32,7 +31,6 @@ app.include_router(chapter.router)
 app.include_router(video.router)
 app.include_router(conversation_to_scenes.router)
 app.include_router(ai_scene.router)
-app.include_router(generative_question.router)
 
 
 @app.get("/")

@@ -20,14 +20,15 @@ async def process_conversation(
 ) -> None:
     try:
         chapter = session.get(Chapter, chapter_id)
-        logger.info("Starting conversation processing")
+        logger.info(f"Starting conversation processing chapter:{chapter_id}")
         new_transcription = Transcription(
             text=chapter.transcription.content,
             chapter_id=chapter_id,
         )
         chapter.status = "PROCESSING"
         session.add(new_transcription)
-        generate_scenes(chapter.transcription.content, new_transcription.id, session)
+        print(new_transcription)
+        generate_scenes(new_transcription.content, new_transcription.id, session)
         session.commit()
         return
     except Exception as e:
