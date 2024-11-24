@@ -39,31 +39,27 @@ async def download_file_async(url: str, suffix: str) -> str:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
-                raise HTTPException(
-                    status_code=response.status, detail=f"Failed to download {url}"
-                )
+                raise HTTPException(status_code=response.status, detail=f"Failed to download {url}")
             temp_file = NamedTemporaryFile(delete=False, suffix=suffix)
             async with aiofiles.open(temp_file.name, "wb") as f:
                 await f.write(await response.read())
             return temp_file.name
 
 
-async def process_video_pair(image_path: str, sound_path: str) -> ImageClip:
+async def process_video_pair(image_path: str, sound_path: str, index: int, total: int) -> ImageClip:
     """Process a single image-audio pair to generate a video clip."""
     # Offload CPU-bound processing to a thread
-    return await asyncio.to_thread(
-        create_video_from_image_and_audio, image_path, sound_path
-    )
+    return await asyncio.to_thread(create_video_from_image_and_audio, image_path, sound_path, index, total)
 
 
-def create_video_from_image_and_audio(image_path: str, audio_path: str) -> ImageClip:
+def create_video_from_image_and_audio(image_path: str, audio_path: str, index: int, total: int) -> ImageClip:
     """Synchronously create a video clip from an image and audio."""
     # Load audio to calculate duration
     audio_clip = AudioFileClip(audio_path)
     audio_duration = audio_clip.duration
 
     # Create an image clip and set duration
-    image_clip = ImageClip(image_path).set_duration(audio_duration)
+    image_clip = ImageClip(image_path).set_start(index / total * audio_duration)
 
     # Set the audio to the image clip
     return image_clip.set_audio(audio_clip).set_duration(audio_duration)
@@ -100,19 +96,19 @@ async def generate_video(chapter_id: int, session: Session):
 
         # Download all files and process each image-audio pair
         tasks = [
-            download_file_async(
-                f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png"
-            )
+            download_file_async(f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png")
             for scene in chapter.transcription.ai_scenes
         ]
         tasks.append(download_file_async(chapter.transcription.recording_link, ".wav"))
 
         # Await downloads
         downloaded_files = await asyncio.gather(*tasks)
+        image_paths = [path for path in downloaded_files if path.endswith(".png")]
+        sound_paths = [path for path in downloaded_files if path.endswith(".wav")]
 
         # Process video pairs
-        for image_path, sound_path in downloaded_files:
-            video_clip = await process_video_pair(image_path, sound_path)
+        for image_path, sound_path, index in zip(image_paths, sound_paths, range(len(image_paths))):
+            video_clip = await process_video_pair(image_path, sound_path, index, len(image_paths))
             video_clips.append(video_clip)
 
         # Concatenate all video clips
