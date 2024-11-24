@@ -99,16 +99,13 @@ async def generate_video(chapter_id: int, session: Session):
         video_clips = []
 
         # Download all files and process each image-audio pair
-        tasks = []
-        for scene in chapter.transcription.ai_scenes:
-            tasks.append(
-                asyncio.gather(
-                    download_file_async(
-                        f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png"
-                    ),
-                    download_file_async(chapter.transcription.recording_link, ".wav"),
-                )
+        tasks = [
+            download_file_async(
+                f"{settings.aws_s3_bucket_url}/{scene.image_link}", ".png"
             )
+            for scene in chapter.transcription.ai_scenes
+        ]
+        tasks.append(download_file_async(chapter.transcription.recording_link, ".wav"))
 
         # Await downloads
         downloaded_files = await asyncio.gather(*tasks)
